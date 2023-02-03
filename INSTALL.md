@@ -5,148 +5,89 @@ planning model. Switch is written in the Python language and several other
 open-source projects (notably Pyomo, Pandas and glpk). The instructions below
 show you how to install  these components on a Linux, Mac or Windows computer.
 
-We recommend that you use the Anaconda scientific computing environment to
-install and run Switch. This provides an easy, cross-platform way to install
-most of the resources that Switch needs, and it avoids interfering with your
-system's built-in Python installation (if present). The instructions below
-assume you will use the Anaconda distribution. If you prefer to use a different
-distribution, you will need to adjust the instructions accordingly. In
-particular, it is possible to install Switch and most of its dependencies using
-the pip package manager if you have that installed and working well, but you
-will need to do additional work to install glpk or coincbc, and possibly git.
+This branch is a pre-release version of Switch used for the Hawaii price
+response study. The instructions below will install this version on your
+computer, which is useful for replicating that study. For new work, see
+https://switch-model.org for advice on installing Switch.
+
+We recommend that you use the Miniconda version of the Anaconda scientific
+computing environment to install and run Switch. This provides an easy,
+cross-platform way to install most of the resources that Switch needs, and it
+avoids interfering with your system's built-in Python installation (if present).
+The instructions below assume you will use Miniconda. If you prefer to use a
+different distribution, you will need to adjust the instructions accordingly
+(e.g., install Switch and its dependencies via pip.)
 
 
-# Install Conda and Python
+# Install Python
 
-Download and install Miniconda from
-https://docs.conda.io/en/latest/miniconda.html or Anaconda from
-https://www.anaconda.com/distribution . We recommend using the 64-bit version
-with Python 3.7. Anaconda and Miniconda install a similar environment, but
-Anaconda installs more packages by default and Miniconda installs them as
-needed.
-
-Note that you do not need administrator privileges to install the Windows Conda
-environment or add packages to it if you select the option to install "just for
-me".
-
-If you want, this is a good point to create an Conda environment specifically
-for using or testing Switch. See here for more details:
-https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html
-
+Download Miniconda from https://docs.conda.io/en/latest/miniconda.html and run
+the installer.
 
 # Install Switch and its Dependencies
 
-After installing Anaconda or Miniconda, open an Anaconda Command Prompt
-(Windows) or Terminal.app (Mac) and type the following command:
+We recommend creating a named conda environment specifically for this version of
+Switch and its dependencies. This is necessary in particular on Macs with Apple
+silicon, to create an x86-64 environment that is compatible with the version of
+Pyomo used for this study.
 
-    conda install -c conda-forge switch_model
+After installing Miniconda, open an Anaconda Command Prompt (Windows) or
+Terminal.app (Mac) and type the following commands (unless using Apple silicon):
 
-This will install the `switch` command line utility, along with various software
-used by Switch (the Pyomo optimization framework, Pandas data manipulation
-framework and glpk numerical solver).
+    conda create --name price_response -c conda-forge python=3.7.3 switch_model=2.0.6 rpy2=3.1.0 scipy=1.3.1 pyomo=5.6.6 pyutilib=5.7.1
 
-If you would also like to enable automatic output graphs, run this command:
+If running on a Mac with Apple silicon (M1 or M2 processor), you should use this
+command instead:
 
-    conda install -c conda-forge ggplot
+    CONDA_SUBDIR=osx-64 conda create --name price_response -c conda-forge python=3.7.3 switch_model=2.0.6 rpy2=3.1.0 scipy=1.3.1 pyomo=5.6.6 pyutilib=5.7.1
 
-If you would like to try the coincbc solver instead of glpk, you can run this
-command:
+This will install the official, released version of `switch`, along with various
+software used by Switch (the Pyomo optimization framework, Pandas data
+manipulation framework and glpk numerical solver) and extra packages used
+for the price response study.
 
-    conda install coincbc
+Next run the following commands:
 
-If you plan to use the iterative demand response model with a custom, nonlinear
-demand system, then you should add these packages:
+    conda activate price_response
+    pip install --ignore-installed --no-deps https://github.com/switch-hawaii/switch/archive/refs/heads/price_response_study.zip
 
-    conda install rpy2 scipy
+These will install the exact version of Switch used for this study.
 
-At this point, you can solve example models or your own power system models.
-See README for more information.
-
-
-# View Examples
-
-If you want to view the Switch source code and examples, you can find them at
-https://github.com/switch-model/switch. You can browse these online or clone them to a local repository (see below if you'd like to run Switch directly from a local repository).
+Note that whenever you open a new terminal or command window, you should always
+run `conda activate price_response` to setup the environment correctly before
+running any of the `switch` commands or the `get_scenario_data.py` script (in
+the [`price_response`](https://github.com/switch-hawaii/price_response)
+repository).
 
 
-# Install a Proprietary Solver (Optional)
+# Install a Proprietary Solver
 
-To solve larger models, you will need to install the cplex or gurobi solvers,
-which are an order of magnitude faster than glpk or coincbc. Both of these have
-free trials available, and are free long-term for academics. You can install
-one of these now or after you install Switch. More information on these solvers
-can be found at the following links:
+We used the proprietary IBM CPLEX solver to solve the models used in the price response study. This is several orders of magnitude faster than
+glpk or other open solvers (as of this writing). It has a free trial available, and is free long-term for
+academics. More information on CPLEX can be found at the following links:
 
 Professional:
-- https://www.gurobi.com/products/gurobi-optimizer/
 - https://www.ibm.com/products/ilog-cplex-optimization-studio/pricing
 
 Academic:
-- https://www.gurobi.com/academia/
 - https://developer.ibm.com/docloud/blog/2019/07/04/cplex-optimization-studio-for-students-and-academics/
 
-For any meaningful-sized problem, you will need the unlimited-size versions of
-these solvers, which will require either purchasing a license, using a
-time-limited trial version, or using an academic-licensed version. The
-small-size free or community versions (typically 1000 variables and constraints)
-will not be enough for any realistic model.
+You will need the unlimited-size version of this solver, which will require
+either purchasing a license, using a time-limited trial version, or using an
+academic-licensed version. The small-size free or community versions (1000
+variables and constraints) will not be enough for this work.
+
+The `options.txt` file in the [`price_response model
+repository`](https://github.com/switch-hawaii/price_response) includes settings
+for the CPLEX solver, including a special flag to tell Switch to retrieve dual
+values after solving integer models. It may be possible to solve this model
+using Gurobi, but you will need to implement similar functionality. (In some
+cases, we have found that Switch/Pyomo can obtain dual values from the AMPL
+version of GPLEX or Gurobi without any additional settings.)
 
 
-# Developer Installation (Optional)
-
-Many people find it useful to browse and edit a "live" installation of Switch
-that they also use to solve models. This supports a number of activities:
-
-- reading the documentation built into the switch_model modules
-- reading the source code of the modules to understand the details of how Switch
-  works
-- updating Switch or fixing bugs to meet local needs or contribute to the main
-  repository
-- setting breakpoints for debugging
-- switching between different versions of Switch
-- trying pre-release branches of Switch
-
-To work this way, first install Switch as described above (this will install all
-the Switch dependencies, even though you will later reinstall Switch itself).
-Then, in a terminal window or Anaconda command prompt,
-use the `cd` and `mkdir` commands to create and/or enter the directory where you
-would like to store the Switch model code and examples. Once you are in that
-directory, run the following commands (don't type the comments that start with
-'#'):
-
-    # Install git software manager.
-    conda install git
-
-    # Download Switch to a directory called `switch`.
-    git clone https://github.com/switch-model/switch.git
-
-    # Uninstall the previous copy of Switch and tell Python to use this one
-    # instead. Note that Python will always load switch_model directly from this
-    # directory, so you can edit it as needed and Python will see the changes.
-    cd switch
-    pip install --upgrade --editable .
-
-    # Run tests (optional)
-    python run_tests.py
-
-    # View switch_model code (optional)
-    cd switch_model
-    ls
-    cd ..
-
-    # View or run examples (optional)
-    cd examples
-    ls
-    cd <example dir>
-    switch solve
-
-After this, you can pull the latest version of the Switch code and examples from
-the main Switch repository at any time by launching a Terminal window or
-Anaconda prompt, then cd'ing into the 'switch' directory and running this
-command:
-
-    git pull
-
-This will attempt to merge your local changes with changes with changes in the main
-repository. If there are any conflicts, you should follow the instructions given
-by the git command to resolve them.
+# Solving the price response models
+See the [`price response model
+repository`](https://github.com/switch-hawaii/price_response) for instructions
+to download the Switch input data used for the price response study and solve
+the model.
